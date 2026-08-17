@@ -40,4 +40,28 @@ public class User {
     protected void onCreate() {
         this.createdAt = Instant.now();
     }
+
+     public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
 }
