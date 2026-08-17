@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18
+    image: postgres:15
     container_name: order-management-postgres
     environment:
       POSTGRES_DB: order_management
