@@ -16,7 +16,7 @@ public class UserService {
     public User createUser(String name, String email, String password) {
 
         if(userRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Email already in use");
+            throw new EmailAlreadyInUseException(email);
         }
 
         User user = new User(name, email, password);

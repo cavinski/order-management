@@ -65,7 +65,9 @@ public class UserServiceTest {
                 "hashed-password"
             )
 
-        ).isInstanceOf(IllegalArgumentException.class).hasMessage("Email already in use");
+        )   
+            .isInstanceOf(EmailAlreadyInUseException.class)
+            .hasMessage("Email already in use: caio@example.com");
 
         verify(userRepository).existsByEmail("caio@example.com");
         verify(userRepository, never()).save(any(User.class));
