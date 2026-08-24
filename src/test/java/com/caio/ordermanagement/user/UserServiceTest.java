@@ -136,4 +136,36 @@ public class UserServiceTest {
 
         verify(userRepository).findById(1L);
     }
+
+    @Test
+    void shouldGetUserByEmail() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        when(userRepository.findByEmail("caio@example.com")).thenReturn(Optional.of(user));
+
+        User foundUser = userService.getUserByEmail("caio@example.com");
+
+        assertThat(foundUser).isSameAs(user);
+
+        verify(userRepository).findByEmail("caio@example.com");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenGettingUserByNonExistentEmail() {
+
+        String email = "notfound@example.com";
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+         assertThatThrownBy(() -> userService.getUserByEmail(email))
+            .isInstanceOf(UserNotFoundException.class)
+            .hasMessage("User not found with email: " + email);
+
+        verify(userRepository).findByEmail(email);
+    }
 }

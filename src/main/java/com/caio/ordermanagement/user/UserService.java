@@ -34,7 +34,11 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public User getUserById(Long id) {
-
         return userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+    }
+
+    @Transactional(readOnly = true)
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email).orElseThrow(() -> new UserNotFoundException(email));
     }
 }
