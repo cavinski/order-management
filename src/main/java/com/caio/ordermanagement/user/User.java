@@ -3,7 +3,7 @@ package com.caio.ordermanagement.user;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-
+import java.util.regex.Pattern;
 import java.time.Instant;
 
 import com.caio.ordermanagement.user.exceptions.InvalidUserException;
@@ -11,6 +11,9 @@ import com.caio.ordermanagement.user.exceptions.InvalidUserException;
 @Entity
 @Table(name = "users")
 public class User {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,6 +49,10 @@ public class User {
 
         if (email == null || email.isBlank()) {
             throw new InvalidUserException("Email cannot be blank");
+        }
+
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            throw new InvalidUserException("Invalid email");
         }
 
         if (password == null || password.isBlank()) {

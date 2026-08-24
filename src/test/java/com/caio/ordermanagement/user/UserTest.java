@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import com.caio.ordermanagement.user.exceptions.InvalidUserException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class UserTest {
@@ -54,6 +55,26 @@ class UserTest {
         assertThatThrownBy(() -> new User("Caio", "caio@example.com", null))
             .isInstanceOf(InvalidUserException.class)
             .hasMessage("Password cannot be blank");
+    }
+
+    @Test
+    void shouldRejectInvalidEmail() {
+
+        assertThatThrownBy(() -> new User("Caio", "invalid-email", "hashed-password"))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Invalid email");
+    }
+
+    @Test
+    void shouldAcceptValidEmail() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        assertThat(user.getEmail()).isEqualTo("caio@example.com");
     }
 
 }
