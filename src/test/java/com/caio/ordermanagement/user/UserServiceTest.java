@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.util.Optional;
+
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
     
@@ -71,5 +73,37 @@ public class UserServiceTest {
 
         verify(userRepository).existsByEmail("caio@example.com");
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void shouldDeactivateUser() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userService.deactivateUser(1L);
+
+        assertThat(user.isActive()).isFalse();
+
+        verify(userRepository).findById(1L);
+        verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenDeactivatingNonExistentUser() {
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.deactivateUser(1L))
+            .isInstanceOf(UserNotFoundException.class)
+            .hasMessage("User not found: 1");
+
+        verify(userRepository).findById(1L);
+        verify(userRepository, never()).delete(any(User.class));
     }
 }

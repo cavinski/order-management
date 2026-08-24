@@ -23,4 +23,12 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    @Transactional
+    public void deactivateUser(Long id) {
+
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+
+        user.deactivate();
+    }
 }
