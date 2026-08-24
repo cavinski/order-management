@@ -1,4 +1,4 @@
-package com.caio.ordermanagement.user;
+package com.caio.ordermanagement.user.exceptions;
 
 public class UserNotFoundException extends RuntimeException {
     

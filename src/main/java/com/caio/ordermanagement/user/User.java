@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.time.Instant;
 
+import com.caio.ordermanagement.user.exceptions.InvalidUserException;
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -37,6 +39,19 @@ public class User {
     }
 
     public User(String name, String email, String password) {
+
+        if (name == null || name.isBlank()) {
+            throw new InvalidUserException("Name cannot be blank");
+        }
+
+        if (email == null || email.isBlank()) {
+            throw new InvalidUserException("Email cannot be blank");
+        }
+
+        if (password == null || password.isBlank()) {
+            throw new InvalidUserException("Password cannot be blank");
+        }
+
         this.name = name;
         this.email = email;
         this.password = password;

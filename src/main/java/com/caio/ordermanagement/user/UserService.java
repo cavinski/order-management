@@ -3,6 +3,9 @@ package com.caio.ordermanagement.user;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.caio.ordermanagement.user.exceptions.EmailAlreadyInUseException;
+import com.caio.ordermanagement.user.exceptions.UserNotFoundException;
+
 @Service
 public class UserService {
     
