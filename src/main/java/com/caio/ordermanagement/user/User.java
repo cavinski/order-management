@@ -43,6 +43,10 @@ public class User {
         this.active = true;
     }
 
+    public void updateName(String name) {
+        this.name = name;
+    }
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();

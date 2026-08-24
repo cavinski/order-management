@@ -108,6 +108,36 @@ public class UserServiceTest {
     }
 
     @Test
+    void shouldUpdateUserName() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userService.updateUserName(1L, "Caio Pedro");
+
+        assertThat(user.getName()).isEqualTo("Caio Pedro");
+
+        verify(userRepository).findById(1L);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingNameOfNonExistentUser() {
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.updateUserName(1L, "Caio Pedro"))   
+            .isInstanceOf(UserNotFoundException.class)
+            .hasMessage("User not found: 1");
+
+        verify(userRepository).findById(1L);
+    }
+
+    @Test
     void shouldGetUserById() {
 
         User user = new User(

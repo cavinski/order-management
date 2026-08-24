@@ -32,6 +32,14 @@ public class UserService {
         user.deactivate();
     }
 
+    @Transactional
+    public void updateUserName(Long id, String name) {
+        
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+
+        user.updateName(name);
+    }
+
     @Transactional(readOnly = true)
     public User getUserById(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
