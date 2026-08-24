@@ -106,4 +106,34 @@ public class UserServiceTest {
         verify(userRepository).findById(1L);
         verify(userRepository, never()).delete(any(User.class));
     }
+
+    @Test
+    void shouldGetUserById() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        User foundUser = userService.getUserById(1L);
+
+        assertThat(foundUser).isSameAs(user);
+
+        verify(userRepository).findById(1L);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenGettingNonExistentUser() {
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+         assertThatThrownBy(() -> userService.deactivateUser(1L))
+            .isInstanceOf(UserNotFoundException.class)
+            .hasMessage("User not found: 1");
+
+        verify(userRepository).findById(1L);
+    }
 }

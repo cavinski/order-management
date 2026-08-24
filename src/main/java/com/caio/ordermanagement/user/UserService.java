@@ -31,4 +31,10 @@ public class UserService {
 
         user.deactivate();
     }
+
+    @Transactional(readOnly = true)
+    public User getUserById(Long id) {
+
+        return userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+    }
 }
