@@ -77,4 +77,36 @@ class UserTest {
         assertThat(user.getEmail()).isEqualTo("caio@example.com");
     }
 
+    @Test
+    void shouldRejectNameLongerThan100Characters() {
+
+        String name = "a".repeat(101);
+
+        assertThatThrownBy(() -> new User(name, "caio@example.com", "hashed-password"))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Name cannot exceed 100 characters");
+    }
+
+    @Test
+    void shouldRejectEmailLongerThan254Characters() {
+
+        String email = "a".repeat(243) + "@example.com";
+
+        assertThat(email).hasSize(255);
+
+        assertThatThrownBy(() -> new User("Caio", email, "hashed-password"))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Email cannot exceed 254 characters");
+    }
+
+    @Test
+    void shouldRejectPasswordLongerThan255Characters() {
+
+        String password = "a".repeat(256);
+
+        assertThatThrownBy(() -> new User("Caio", "caio@example.com", password))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Password cannot exceed 255 characters");
+    }
+
 }

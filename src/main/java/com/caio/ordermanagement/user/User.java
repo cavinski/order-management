@@ -13,6 +13,9 @@ import com.caio.ordermanagement.user.exceptions.InvalidUserException;
 public class User {
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    private static final int MAX_NAME_LENGTH = 100;
+    private static final int MAX_EMAIL_LENGTH = 254;
+    private static final int MAX_PASSWORD_LENGTH = 255;
 
 
     @Id
@@ -47,8 +50,16 @@ public class User {
             throw new InvalidUserException("Name cannot be blank");
         }
 
+        if (name.length() > MAX_NAME_LENGTH) {
+            throw new InvalidUserException("Name cannot exceed 100 characters");
+        }
+
         if (email == null || email.isBlank()) {
             throw new InvalidUserException("Email cannot be blank");
+        }
+
+        if (email.length() > MAX_EMAIL_LENGTH) {
+            throw new InvalidUserException("Email cannot exceed 254 characters");
         }
 
         if (!EMAIL_PATTERN.matcher(email).matches()) {
@@ -57,6 +68,10 @@ public class User {
 
         if (password == null || password.isBlank()) {
             throw new InvalidUserException("Password cannot be blank");
+        }
+
+        if (password.length() > MAX_PASSWORD_LENGTH) {
+            throw new InvalidUserException("Password cannot exceed 255 characters");
         }
 
         this.name = name;
