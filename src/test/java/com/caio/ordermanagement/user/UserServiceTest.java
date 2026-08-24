@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import java.util.Optional;
@@ -135,6 +136,82 @@ public class UserServiceTest {
             .hasMessage("User not found: 1");
 
         verify(userRepository).findById(1L);
+    }
+
+    @Test
+    void shouldUpdateUserEmail() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+
+        userService.updateUserEmail(1L, "new@example.com");
+
+        assertThat(user.getEmail()).isEqualTo("new@example.com");
+
+        verify(userRepository).findById(1L);
+        verify(userRepository).existsByEmail("new@example.com");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingToEmailAlreadyInUse() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(userRepository.existsByEmail("other@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() ->userService.updateUserEmail(1L, "other@example.com"))
+            .isInstanceOf(EmailAlreadyInUseException.class)
+            .hasMessage("Email already in use: other@example.com");
+
+        assertThat(user.getEmail()).isEqualTo("caio@example.com");
+
+        verify(userRepository).findById(1L);
+        verify(userRepository).existsByEmail("other@example.com");
+    }
+
+    @Test
+    void shouldAllowUserToKeepCurrentEmail() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userService.updateUserEmail(1L, "caio@example.com");
+
+        assertThat(user.getEmail()).isEqualTo("caio@example.com");
+
+        verify(userRepository).findById(1L);
+        verify(userRepository, never()).existsByEmail(anyString());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingEmailOfNonExistentUser() {
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->userService.updateUserEmail(1L, "new@example.com"))
+            .isInstanceOf(UserNotFoundException.class)
+            .hasMessage("User not found: 1");
+
+        verify(userRepository).findById(1L);
+        verify(userRepository, never()).existsByEmail(anyString());
     }
 
     @Test

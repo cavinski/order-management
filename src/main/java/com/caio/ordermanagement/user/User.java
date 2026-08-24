@@ -47,6 +47,10 @@ public class User {
         this.name = name;
     }
 
+    public void updateEmail(String email) {
+        this.email = email;
+    }
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();

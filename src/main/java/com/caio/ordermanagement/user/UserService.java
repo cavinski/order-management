@@ -34,10 +34,21 @@ public class UserService {
 
     @Transactional
     public void updateUserName(Long id, String name) {
-        
+
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        user.updateName(name);
+    }
+
+    @Transactional
+    public void updateUserEmail(Long id, String email) {
+
         User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
 
-        user.updateName(name);
+        if (!user.getEmail().equals(email) && userRepository.existsByEmail(email)) {
+            throw new EmailAlreadyInUseException(email);
+        }
+
+        user.updateEmail(email);
     }
 
     @Transactional(readOnly = true)
