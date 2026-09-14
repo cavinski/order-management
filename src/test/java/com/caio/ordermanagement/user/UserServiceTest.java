@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import java.util.Optional;
 import com.caio.ordermanagement.user.dto.CreateUserRequest;
+import com.caio.ordermanagement.user.dto.CreateUserResponse;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -47,11 +48,11 @@ public class UserServiceTest {
 
         when(userRepository.save(any(User.class))).thenReturn(createdUser);
 
-        User result = userService.createUser(request);      
+        CreateUserResponse result = userService.createUser(request);      
 
-        assertThat(result.getName()).isEqualTo("Caio");
-        assertThat(result.getEmail()).isEqualTo("caio@example.com");
-        assertThat(result.isActive()).isTrue();
+        assertThat(result.name()).isEqualTo("Caio");
+        assertThat(result.email()).isEqualTo("caio@example.com");
+        assertThat(result.active()).isTrue();
 
         verify(userRepository).existsByEmail("caio@example.com");
         verify(userRepository).save(any(User.class));

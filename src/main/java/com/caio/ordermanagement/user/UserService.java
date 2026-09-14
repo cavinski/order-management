@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.caio.ordermanagement.user.exceptions.EmailAlreadyInUseException;
 import com.caio.ordermanagement.user.exceptions.UserNotFoundException;
 import com.caio.ordermanagement.user.dto.CreateUserRequest;
+import com.caio.ordermanagement.user.dto.CreateUserResponse;
 
 @Service
 public class UserService {
@@ -16,7 +17,7 @@ public class UserService {
     }
 
     @Transactional
-    public User createUser(CreateUserRequest request) {
+    public CreateUserResponse createUser(CreateUserRequest request) {
 
         if(userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyInUseException(request.email());
@@ -28,7 +29,15 @@ public class UserService {
             request.password()
         );
 
-        return userRepository.save(user);
+        User createdUser = userRepository.save(user);
+
+        return new CreateUserResponse(
+            createdUser.getId(),
+            createdUser.getName(),
+            createdUser.getEmail(),
+            createdUser.isActive(),
+            createdUser.getCreatedAt()
+        );
     }
 
     @Transactional
