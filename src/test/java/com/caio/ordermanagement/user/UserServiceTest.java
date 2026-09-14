@@ -4,19 +4,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import com.caio.ordermanagement.user.exceptions.EmailAlreadyInUseException;
 import com.caio.ordermanagement.user.exceptions.UserNotFoundException;
-
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-
 import java.util.Optional;
+import com.caio.ordermanagement.user.dto.CreateUserRequest;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -34,25 +31,27 @@ public class UserServiceTest {
     @Test
     void shouldCreateUser() {
 
+        CreateUserRequest request = new CreateUserRequest(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        User createdUser = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
         when(userRepository.existsByEmail("caio@example.com")).thenReturn(false);
 
-        User user = new User(
-            "Caio",
-            "caio@example.com",
-            "hashed-password"
-        );
+        when(userRepository.save(any(User.class))).thenReturn(createdUser);
 
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        User result = userService.createUser(request);      
 
-        User createdUser = userService.createUser(
-            "Caio",
-            "caio@example.com",
-            "hashed-password"
-        );
-
-        assertThat(createdUser.getName()).isEqualTo("Caio");
-        assertThat(createdUser.getEmail()).isEqualTo("caio@example.com");
-        assertThat(createdUser.isActive()).isTrue();
+        assertThat(result.getName()).isEqualTo("Caio");
+        assertThat(result.getEmail()).isEqualTo("caio@example.com");
+        assertThat(result.isActive()).isTrue();
 
         verify(userRepository).existsByEmail("caio@example.com");
         verify(userRepository).save(any(User.class));
@@ -61,17 +60,15 @@ public class UserServiceTest {
     @Test
     void shouldRejectDuplicateEmail() {
 
+        CreateUserRequest request = new CreateUserRequest(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
         when(userRepository.existsByEmail("caio@example.com")).thenReturn(true);
 
-        assertThatThrownBy(() -> 
-
-            userService.createUser(
-                "Caio",
-                "caio@example.com",
-                "hashed-password"
-            )
-
-        )   
+        assertThatThrownBy(() -> userService.createUser(request))   
             .isInstanceOf(EmailAlreadyInUseException.class)
             .hasMessage("Email already in use: caio@example.com");
 

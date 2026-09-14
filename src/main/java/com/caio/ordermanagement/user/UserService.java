@@ -2,9 +2,9 @@ package com.caio.ordermanagement.user;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.caio.ordermanagement.user.exceptions.EmailAlreadyInUseException;
 import com.caio.ordermanagement.user.exceptions.UserNotFoundException;
+import com.caio.ordermanagement.user.dto.CreateUserRequest;
 
 @Service
 public class UserService {
@@ -16,13 +16,17 @@ public class UserService {
     }
 
     @Transactional
-    public User createUser(String name, String email, String password) {
+    public User createUser(CreateUserRequest request) {
 
-        if(userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyInUseException(email);
+        if(userRepository.existsByEmail(request.email())) {
+            throw new EmailAlreadyInUseException(request.email());
         }
 
-        User user = new User(name, email, password);
+        User user = new User(
+            request.name(), 
+            request.email(), 
+            request.password()
+        );
 
         return userRepository.save(user);
     }
