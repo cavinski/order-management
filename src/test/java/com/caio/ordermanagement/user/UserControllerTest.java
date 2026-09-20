@@ -3,6 +3,8 @@ package com.caio.ordermanagement.user;
 
 import com.caio.ordermanagement.user.dto.CreateUserRequest;
 import com.caio.ordermanagement.user.dto.CreateUserResponse;
+import com.caio.ordermanagement.user.dto.UpdateUserEmailRequest;
+import com.caio.ordermanagement.user.dto.UpdateUserNameRequest;
 import com.caio.ordermanagement.user.exceptions.EmailAlreadyInUseException;
 import com.caio.ordermanagement.user.exceptions.UserNotFoundException;
 
@@ -17,8 +19,11 @@ import java.time.Instant;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @WebMvcTest(UserController.class)
@@ -136,6 +141,147 @@ public class UserControllerTest {
         when(userService.getUserById(userId)).thenThrow(new UserNotFoundException(userId));
 
         mockMvc.perform(get("/users/{id}", userId))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.title").value("User not found"));
+    }
+
+    @Test
+    void shouldUpdateUserName() throws Exception {
+
+        Long userId = 1L;
+
+        UpdateUserNameRequest request = new UpdateUserNameRequest("Carlos");
+
+        mockMvc.perform(patch("/users/{id}/name", userId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNoContent());
+
+        verify(userService).updateUserName(userId, "Carlos");
+    }
+
+    @Test
+    void shouldRejectInvalidUserName() throws Exception {
+
+        Long userId = 1L;
+
+        UpdateUserNameRequest request = new UpdateUserNameRequest("");
+
+        mockMvc.perform(patch("/users/{id}/name", userId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.status").value(400))
+            .andExpect(jsonPath("$.title").value("Validation failed"))
+            .andExpect(jsonPath("$.errors.name").exists());
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdatingNameOfNonexistentUser() throws Exception {
+
+        Long userId = 999L;
+
+        UpdateUserNameRequest request = new UpdateUserNameRequest("Carlos");
+
+        doThrow(new UserNotFoundException(userId)).when(userService).updateUserName(userId, request.name());
+
+        mockMvc.perform(patch("/users/{id}/name", userId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.title").value("User not found"));
+    }
+
+    @Test
+    void shouldUpdateUserEmail() throws Exception {
+
+        Long userId = 1L;
+
+        UpdateUserEmailRequest request = new UpdateUserEmailRequest("new-email@example.com");
+
+        mockMvc.perform(patch("/users/{id}/email", userId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNoContent());
+
+        verify(userService).updateUserEmail(userId, "new-email@example.com");
+    }
+
+    @Test
+    void shouldRejectInvalidUserEmail() throws Exception {
+
+        Long userId = 1L;
+
+        UpdateUserEmailRequest request = new UpdateUserEmailRequest("invalid-email");
+
+        mockMvc.perform(patch("/users/{id}/email", userId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.status").value(400))
+            .andExpect(jsonPath("$.title").value("Validation failed"))
+            .andExpect(jsonPath("$.errors.email").exists());
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdatingEmailOfNonexistentUser() throws Exception {
+
+        Long userId = 999L;
+
+        UpdateUserEmailRequest request = new UpdateUserEmailRequest("new-email@example.com");
+
+        doThrow(new UserNotFoundException(userId)).when(userService).updateUserEmail(userId, request.email());
+
+        mockMvc.perform(patch("/users/{id}/email", userId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.title").value("User not found"));
+    }
+
+    @Test
+    void shouldReturnConflictWhenUpdatingEmailToAnEmailAlreadyInUse() throws Exception {
+
+        Long userId = 1L;
+
+        UpdateUserEmailRequest request = new UpdateUserEmailRequest("existing@example.com");
+
+        doThrow(new EmailAlreadyInUseException(request.email())).when(userService).updateUserEmail(userId, request.email());
+
+        mockMvc.perform(patch("/users/{id}/email", userId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.status").value(409))
+            .andExpect(jsonPath("$.title").value("Conflict"))
+            .andExpect(jsonPath("$.detail").value("Email already in use: " + request.email()));
+    }
+
+    @Test
+    void shouldDeactivateUser() throws Exception {
+
+        Long userId = 1L;
+
+        mockMvc.perform(patch("/users/{id}/deactivation", userId)).andExpect(status().isNoContent());
+
+        verify(userService).deactivateUser(userId);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeactivatingNonexistentUser() throws Exception {
+
+        Long userId = 999L;
+
+        doThrow(new UserNotFoundException(userId)).when(userService).deactivateUser(userId);
+
+        mockMvc.perform(patch("/users/{id}/deactivation", userId))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.status").value(404))
             .andExpect(jsonPath("$.title").value("User not found"));

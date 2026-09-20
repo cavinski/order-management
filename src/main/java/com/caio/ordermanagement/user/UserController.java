@@ -3,6 +3,8 @@ package com.caio.ordermanagement.user;
 import com.caio.ordermanagement.user.dto.CreateUserRequest;
 import com.caio.ordermanagement.user.dto.CreateUserResponse;
 import com.caio.ordermanagement.user.dto.GetUserResponse;
+import com.caio.ordermanagement.user.dto.UpdateUserEmailRequest;
+import com.caio.ordermanagement.user.dto.UpdateUserNameRequest;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -41,6 +43,27 @@ public class UserController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/name") 
+    @ResponseStatus(HttpStatus.NO_CONTENT) 
+    public void updateUserName(@PathVariable Long id, @Valid @RequestBody UpdateUserNameRequest request) {
+
+        userService.updateUserName(id, request.name());
+    }
+
+    @PatchMapping("/{id}/email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateUserEmail(@PathVariable Long id, @Valid @RequestBody UpdateUserEmailRequest request) {
+
+        userService.updateUserEmail(id, request.email());
+    }
+
+    @PatchMapping("/{id}/deactivation")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deactivateUser(@PathVariable Long id) {
+
+        userService.deactivateUser(id);
     }
 
 }
