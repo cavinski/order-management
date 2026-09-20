@@ -238,7 +238,7 @@ public class UserServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-         assertThatThrownBy(() -> userService.deactivateUser(1L))
+         assertThatThrownBy(() -> userService.getUserById(1L))
             .isInstanceOf(UserNotFoundException.class)
             .hasMessage("User not found: 1");
 
