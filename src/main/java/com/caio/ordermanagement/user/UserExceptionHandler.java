@@ -1,6 +1,8 @@
-package com.caio.ordermanagement.user.exceptions;
+package com.caio.ordermanagement.user;
 
 import com.caio.ordermanagement.user.exceptions.EmailAlreadyInUseException;
+import com.caio.ordermanagement.user.exceptions.UserNotFoundException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
