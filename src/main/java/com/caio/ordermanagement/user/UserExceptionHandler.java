@@ -1,12 +1,11 @@
 package com.caio.ordermanagement.user;
 
 import com.caio.ordermanagement.user.exceptions.EmailAlreadyInUseException;
+import com.caio.ordermanagement.user.exceptions.InvalidUserException;
 import com.caio.ordermanagement.user.exceptions.UserNotFoundException;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import java.util.HashMap;
@@ -52,6 +51,16 @@ public class UserExceptionHandler {
         problem.setTitle("User not found");
         problem.setDetail(exception.getMessage());
 
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidUserException.class)
+    public ProblemDetail handleInvalidUser(InvalidUserException exception) {
+
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setTitle("Invalid user");
+        problem.setDetail(exception.getMessage());
+        
         return problem;
     }
 }
