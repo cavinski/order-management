@@ -109,4 +109,136 @@ class UserTest {
             .hasMessage("Password cannot exceed 255 characters");
     }
 
+    @Test
+    void shouldUpdateName() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        user.updateName("Carlos");
+
+        assertThat(user.getName()).isEqualTo("Carlos");
+    }
+
+    @Test
+    void shouldRejectBlankNameWhenUpdating() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        assertThatThrownBy(() -> user.updateName(""))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Name cannot be blank");
+    }
+
+    @Test
+    void shouldRejectNullNameWhenUpdating() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        assertThatThrownBy(() -> user.updateName(null))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Name cannot be blank");
+    }
+
+    @Test
+    void shouldRejectNameLongerThan100CharactersWhenUpdating() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        String name = "a".repeat(101);
+
+        assertThatThrownBy(() -> user.updateName(name))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Name cannot exceed 100 characters");
+    }
+
+    @Test
+    void shouldUpdateEmail() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        user.updateEmail("new@example.com");
+
+        assertThat(user.getEmail()).isEqualTo("new@example.com");
+    }
+
+    @Test
+    void shouldRejectBlankEmailWhenUpdating() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        assertThatThrownBy(() -> user.updateEmail(""))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Email cannot be blank");
+    }
+
+    @Test
+    void shouldRejectNullEmailWhenUpdating() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        assertThatThrownBy(() -> user.updateEmail(null))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Email cannot be blank");
+    }
+
+    @Test
+    void shouldRejectInvalidEmailWhenUpdating() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        assertThatThrownBy(() -> user.updateEmail("invalid-email"))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Invalid email");
+    }
+
+    @Test
+    void shouldRejectEmailLongerThan254CharactersWhenUpdating() {
+        
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "hashed-password"
+        );
+
+        String email = "a".repeat(243) + "@example.com";
+
+        assertThat(email).hasSize(255);
+
+        assertThatThrownBy(() -> user.updateEmail(email))
+            .isInstanceOf(InvalidUserException.class)
+            .hasMessage("Email cannot exceed 254 characters");
+    }
+
 }

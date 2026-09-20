@@ -1,11 +1,8 @@
 package com.caio.ordermanagement.user;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import java.util.regex.Pattern;
 import java.time.Instant;
-
 import com.caio.ordermanagement.user.exceptions.InvalidUserException;
 
 @Entity
@@ -22,16 +19,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     @Column(nullable = false, length = 100)
     private String name;
 
-    @NotBlank
-    @Email
     @Column(nullable = false, unique = true, length = 254)
     private String email;
 
-    @NotBlank
     @Column(nullable = false, length = 255)
     private String password;
 
@@ -46,33 +39,9 @@ public class User {
 
     public User(String name, String email, String password) {
 
-        if (name == null || name.isBlank()) {
-            throw new InvalidUserException("Name cannot be blank");
-        }
-
-        if (name.length() > MAX_NAME_LENGTH) {
-            throw new InvalidUserException("Name cannot exceed 100 characters");
-        }
-
-        if (email == null || email.isBlank()) {
-            throw new InvalidUserException("Email cannot be blank");
-        }
-
-        if (email.length() > MAX_EMAIL_LENGTH) {
-            throw new InvalidUserException("Email cannot exceed 254 characters");
-        }
-
-        if (!EMAIL_PATTERN.matcher(email).matches()) {
-            throw new InvalidUserException("Invalid email");
-        }
-
-        if (password == null || password.isBlank()) {
-            throw new InvalidUserException("Password cannot be blank");
-        }
-
-        if (password.length() > MAX_PASSWORD_LENGTH) {
-            throw new InvalidUserException("Password cannot exceed 255 characters");
-        }
+        validateName(name);
+        validateEmail(email);
+        validatePassword(password);
 
         this.name = name;
         this.email = email;
@@ -81,10 +50,16 @@ public class User {
     }
 
     public void updateName(String name) {
+
+        validateName(name);
+
         this.name = name;
     }
 
     public void updateEmail(String email) {
+
+        validateEmail(email);
+
         this.email = email;
     }
 
@@ -115,5 +90,43 @@ public class User {
 
     public void deactivate() {
         this.active = false;
+    }
+
+
+    private void validateName(String name) {
+
+        if (name == null || name.isBlank()) {
+            throw new InvalidUserException("Name cannot be blank");
+        }
+
+        if (name.length() > MAX_NAME_LENGTH) {
+            throw new InvalidUserException("Name cannot exceed 100 characters");
+        }
+    }
+
+    private void validateEmail(String email) {
+
+        if (email == null || email.isBlank()) {
+            throw new InvalidUserException("Email cannot be blank");
+        }
+
+        if (email.length() > MAX_EMAIL_LENGTH) {
+            throw new InvalidUserException("Email cannot exceed 254 characters");
+        }
+
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            throw new InvalidUserException("Invalid email");
+        }
+    }
+
+    private void validatePassword(String password) {
+
+        if (password == null || password.isBlank()) {
+            throw new InvalidUserException("Password cannot be blank");
+        }
+
+        if (password.length() > MAX_PASSWORD_LENGTH) {
+            throw new InvalidUserException("Password cannot exceed 255 characters");
+        }
     }
 }
