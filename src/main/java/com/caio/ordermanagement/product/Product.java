@@ -80,6 +80,14 @@ public class Product {
         return active;
     }
 
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
     public void updateName(String name) {
         validateName(name);
         this.name = name;
