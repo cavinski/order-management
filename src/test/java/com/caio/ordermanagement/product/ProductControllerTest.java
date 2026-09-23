@@ -210,4 +210,73 @@ public class ProductControllerTest {
 
         verify(productService).deactivateProduct(1L);
     }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdatingProductNameAndProductDoesNotExist() throws Exception {
+
+        doThrow(new ProductNotFoundException(1L))
+            .when(productService)
+            .updateProductName(1L, "Notebook Pro");
+
+        UpdateProductNameRequest request = new UpdateProductNameRequest("Notebook Pro");
+
+        mockMvc.perform(patch("/products/1/name")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+
+        verify(productService).updateProductName(1L, "Notebook Pro");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdatingProductDescriptionAndProductDoesNotExist() throws Exception {
+
+        doThrow(new ProductNotFoundException(1L))
+            .when(productService)
+            .updateProductDescription(1L, "Notebook para desenvolvimento");
+
+        UpdateProductDescriptionRequest request = 
+            new UpdateProductDescriptionRequest("Notebook para desenvolvimento");
+
+        mockMvc.perform(patch("/products/1/description")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+
+        verify(productService).updateProductDescription(
+            1L,
+            "Notebook para desenvolvimento"
+        );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdatingProductPriceAndProductDoesNotExist() throws Exception {
+
+        BigDecimal price = new BigDecimal("4000.00");
+
+        doThrow(new ProductNotFoundException(1L))
+            .when(productService)
+            .updateProductPrice(1L, price);
+
+        UpdateProductPriceRequest request = new UpdateProductPriceRequest(price);
+
+        mockMvc.perform(patch("/products/1/price")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+
+        verify(productService).updateProductPrice(1L, price);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeactivatingProductAndProductDoesNotExist() throws Exception {
+
+        doThrow(new ProductNotFoundException(1L))
+            .when(productService)
+            .deactivateProduct(1L);
+
+        mockMvc.perform(patch("/products/1/deactivation")).andExpect(status().isNotFound());
+
+        verify(productService).deactivateProduct(1L);
+    }
 }
