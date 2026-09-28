@@ -9,6 +9,7 @@ public class OrderItem {
     private final Product product;
     private int quantity;
     private final BigDecimal unitPrice;
+    private boolean active;
 
     public OrderItem(Product product, int quantity) {
         if (product == null) {
@@ -22,6 +23,7 @@ public class OrderItem {
         this.product = product;
         this.quantity = quantity;
         this.unitPrice = product.getPrice();
+        this.active = true;
     }
 
     public Product getProduct() {
@@ -34,6 +36,14 @@ public class OrderItem {
 
     public BigDecimal getUnitPrice() {
         return unitPrice;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void remove() {
+        this.active = false;
     }
 
     public BigDecimal getSubtotal() {

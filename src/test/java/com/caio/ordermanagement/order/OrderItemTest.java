@@ -24,6 +24,7 @@ public class OrderItemTest {
         assertThat(item.getProduct()).isSameAs(product);
         assertThat(item.getQuantity()).isEqualTo(2);
         assertThat(item.getUnitPrice()).isEqualByComparingTo("3500.00");
+        assertThat(item.isActive()).isTrue();
     }
 
     @Test
@@ -143,5 +144,56 @@ public class OrderItemTest {
         assertThatThrownBy(() -> item.updateQuantity(-1))
             .isInstanceOf(InvalidOrderItemException.class)
             .hasMessage("Quantity must be positive");
+    }
+
+    @Test
+    void shouldDeactivateItemWhenRemoved() {
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        OrderItem item = new OrderItem(product, 2);
+
+        item.remove();
+
+        assertThat(item.isActive()).isFalse();
+    }
+
+    @Test
+    void shouldKeepItemValidWhenProductIsDeactivated() {
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        OrderItem item = new OrderItem(product, 2);
+
+        product.deactivate();
+
+        assertThat(item.getProduct()).isSameAs(product);
+        assertThat(item.getUnitPrice()).isEqualByComparingTo(new BigDecimal("3500.00"));
+        assertThat(item.getSubtotal()).isEqualByComparingTo(new BigDecimal("7000.00"));
+    }
+
+    @Test
+    void shouldRemainInactiveWhenRemovedMoreThanOnce() {
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        OrderItem item = new OrderItem(product, 2);
+
+        item.remove();
+        item.remove();
+
+        assertThat(item.isActive()).isFalse();
     }
 }
