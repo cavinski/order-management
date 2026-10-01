@@ -2,6 +2,8 @@ package com.caio.ordermanagement.order;
 
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
+import com.caio.ordermanagement.order.dto.GetOrderResponse;
+import com.caio.ordermanagement.order.exceptions.OrderNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderProductNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderUserNotFoundException;
 import com.caio.ordermanagement.product.Product;
@@ -56,6 +58,14 @@ public class OrderService {
         return toResponse(savedOrder);
     }
 
+    @Transactional(readOnly = true)
+    public GetOrderResponse getOrder(Long id) {
+
+        Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+
+        return toGetResponse(order);
+    }
+
     private CreateOrderResponse toResponse(Order order) {
 
         List<CreateOrderResponse.ItemResponse> items =
@@ -76,4 +86,24 @@ public class OrderService {
         );
     }
 
+    private GetOrderResponse toGetResponse(Order order) {
+
+        List<GetOrderResponse.ItemResponse> items =
+            order.getItems().stream().map(item -> new GetOrderResponse.ItemResponse(
+                item.getProduct().getId(),
+                item.getQuantity(),
+                item.getUnitPrice(),
+                item.getSubtotal(),
+                item.isActive()
+            )).toList();
+
+        return new GetOrderResponse(
+            order.getId(),
+            order.getUser().getId(),
+            order.getStatus(),
+            order.getTotal(),
+            order.getCreatedAt(),
+            items
+        );
+    }
 }

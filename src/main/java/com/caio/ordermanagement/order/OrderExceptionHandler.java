@@ -1,6 +1,7 @@
 package com.caio.ordermanagement.order;
 
 import com.caio.ordermanagement.order.exceptions.InvalidOrderException;
+import com.caio.ordermanagement.order.exceptions.OrderNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderProductNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderUserNotFoundException;
 import java.util.HashMap;
@@ -63,6 +64,17 @@ public class OrderExceptionHandler {
 
         problem.setProperty("errors", errors);
 
+        return problem;
+    }
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ProblemDetail handleOrderNotFound(OrderNotFoundException exception) {
+
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+
+        problem.setTitle("Order not found");
+        problem.setDetail(exception.getMessage());
+        
         return problem;
     }
 }

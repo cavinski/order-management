@@ -2,7 +2,9 @@ package com.caio.ordermanagement.order;
 
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
+import com.caio.ordermanagement.order.dto.GetOrderResponse;
 import com.caio.ordermanagement.order.exceptions.InvalidOrderException;
+import com.caio.ordermanagement.order.exceptions.OrderNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderProductNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderUserNotFoundException;
 import com.caio.ordermanagement.product.Product;
@@ -234,5 +236,76 @@ public class OrderServiceTest {
             .hasMessage("Inactive products cannot be added to orders");
 
         verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldGetOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product notebook = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Product mouse = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("150.00")
+        );
+
+        OrderItem notebookItem = new OrderItem(notebook, 2);
+        OrderItem mouseItem = new OrderItem(mouse, 1);
+
+        Order order = new Order(
+            user,
+            List.of(notebookItem, mouseItem)
+        );
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        GetOrderResponse response = orderService.getOrder(1L);
+
+        assertThat(response.userId()).isEqualTo(user.getId());
+        assertThat(response.status()).isEqualTo(OrderStatus.CREATED);
+        assertThat(response.total()).isEqualByComparingTo("7150.00");
+        assertThat(response.createdAt()).isEqualTo(order.getCreatedAt());
+
+        assertThat(response.items()).hasSize(2);
+
+        GetOrderResponse.ItemResponse notebookResponse = response.items().get(0);
+
+        assertThat(notebookResponse.productId()).isEqualTo(notebook.getId());
+        assertThat(notebookResponse.quantity()).isEqualTo(2);
+        assertThat(notebookResponse.unitPrice()).isEqualByComparingTo("3500.00");
+        assertThat(notebookResponse.subtotal()).isEqualByComparingTo("7000.00");
+        assertThat(notebookResponse.active()).isTrue();
+
+        GetOrderResponse.ItemResponse mouseResponse = response.items().get(1);
+
+        assertThat(mouseResponse.productId()).isEqualTo(mouse.getId());
+        assertThat(mouseResponse.quantity()).isEqualTo(1);
+        assertThat(mouseResponse.unitPrice()).isEqualByComparingTo("150.00");
+        assertThat(mouseResponse.subtotal()).isEqualByComparingTo("150.00");
+        assertThat(mouseResponse.active()).isTrue();
+
+        verify(orderRepository).findById(1L);
+    }
+
+    @Test
+    void shouldThrowWhenOrderDoesNotExist() {
+
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.getOrder(999L))
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessage("Order not found with id: 999");
+
+        verify(orderRepository).findById(999L);
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
+import com.caio.ordermanagement.order.dto.GetOrderResponse;
 
 @RestController 
 @RequestMapping("/orders")
@@ -22,5 +23,11 @@ public class OrderController {
     public CreateOrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request) {
         
         return orderService.createOrder(request);
+    }
+
+    @GetMapping("/{id}")
+    public GetOrderResponse getOrder(@PathVariable Long id) {
+        
+        return orderService.getOrder(id);
     }
 } 

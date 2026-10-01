@@ -10,7 +10,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
+import com.caio.ordermanagement.order.dto.GetOrderResponse;
 import com.caio.ordermanagement.order.exceptions.InvalidOrderException;
+import com.caio.ordermanagement.order.exceptions.OrderNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderProductNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderUserNotFoundException;
 
@@ -20,6 +22,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -277,4 +280,64 @@ public class OrderControllerTest {
             .value("Only active users can create orders"));
     }
 
+    @Test
+    void shouldGetOrder() throws Exception {
+
+        GetOrderResponse response = new GetOrderResponse(
+
+            100L,
+            1L,
+            OrderStatus.CREATED,
+            new BigDecimal("7150.00"),
+            Instant.parse("2026-08-24T12:00:00Z"),
+            List.of(
+                new GetOrderResponse.ItemResponse(
+                    10L,
+                    2,
+                    new BigDecimal("3500.00"),
+                    new BigDecimal("7000.00"),
+                    true
+                ),
+                new GetOrderResponse.ItemResponse(
+                    20L,
+                    1,
+                    new BigDecimal("150.00"),
+                    new BigDecimal("150.00"),
+                    true
+                )
+            )
+        );
+
+        when(orderService.getOrder(100L)).thenReturn(response);
+
+        mockMvc.perform(get("/orders/100").contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(100))
+            .andExpect(jsonPath("$.userId").value(1))
+            .andExpect(jsonPath("$.status").value("CREATED"))
+            .andExpect(jsonPath("$.total").value(7150.00))
+            .andExpect(jsonPath("$.items.length()").value(2))
+            .andExpect(jsonPath("$.items[0].productId").value(10))
+            .andExpect(jsonPath("$.items[0].quantity").value(2))
+            .andExpect(jsonPath("$.items[0].unitPrice").value(3500.00))
+            .andExpect(jsonPath("$.items[0].subtotal").value(7000.00))
+            .andExpect(jsonPath("$.items[0].active").value(true))
+            .andExpect(jsonPath("$.items[1].productId").value(20))
+            .andExpect(jsonPath("$.items[1].quantity").value(1))
+            .andExpect(jsonPath("$.items[1].unitPrice").value(150.00))
+            .andExpect(jsonPath("$.items[1].subtotal").value(150.00))
+            .andExpect(jsonPath("$.items[1].active").value(true));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenOrderDoesNotExist() throws Exception {
+
+        when(orderService.getOrder(999L)).thenThrow(new OrderNotFoundException(999L));
+
+        mockMvc.perform(get("/orders/999"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("Order not found"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order not found with id: 999"));
+    }
 }
