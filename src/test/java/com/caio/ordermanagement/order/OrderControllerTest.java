@@ -382,4 +382,44 @@ public class OrderControllerTest {
 
         verify(orderService).confirmOrder(1L);
     }
+
+    @Test
+    void shouldStartProcessingOrder() throws Exception {
+
+        doNothing().when(orderService).startProcessing(1L);
+
+        mockMvc.perform(post("/orders/1/processing")).andExpect(status().isNoContent());
+
+        verify(orderService).startProcessing(1L);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenStartingProcessingNonExistingOrder() throws Exception {
+
+        doThrow(new OrderNotFoundException(999L)).when(orderService).startProcessing(999L);
+
+        mockMvc.perform(post("/orders/999/processing"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("Order not found"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order not found with id: 999"));
+
+        verify(orderService).startProcessing(999L);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenStartingProcessingOrderInInvalidStatus() throws Exception {
+
+        doThrow(new InvalidOrderException("Order can only start processing from CONFIRMED status"))
+            .when(orderService)
+            .startProcessing(1L);
+
+        mockMvc.perform(post("/orders/1/processing"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").value("Invalid order"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order can only start processing from CONFIRMED status"));
+
+        verify(orderService).startProcessing(1L);
+    }
 }

@@ -74,6 +74,14 @@ public class OrderService {
         order.confirm();
     }
 
+    @Transactional
+    public void startProcessing(Long id) {
+
+        Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+
+        order.startProcessing();
+    }
+
     private CreateOrderResponse toResponse(Order order) {
 
         List<CreateOrderResponse.ItemResponse> items =

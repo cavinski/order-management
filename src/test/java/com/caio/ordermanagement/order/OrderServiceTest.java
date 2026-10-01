@@ -378,4 +378,74 @@ public class OrderServiceTest {
             .isInstanceOf(InvalidOrderException.class)
             .hasMessage("Order can only be confirmed from CREATED status");
     }
+
+    @Test
+    void shouldStartProcessingOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        orderService.startProcessing(1L);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PROCESSING);
+
+        verify(orderRepository).findById(1L);
+    }
+
+    @Test
+    void shouldThrowWhenStartingProcessingOrderThatDoesNotExist() {
+
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.startProcessing(999L))
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessage("Order not found with id: 999");
+
+        verify(orderRepository).findById(999L);
+    }
+
+    @Test
+    void shouldNotStartProcessingOrderWhenItIsNotConfirmed() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.startProcessing(1L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order can only start processing from CONFIRMED status");
+    }
 }
