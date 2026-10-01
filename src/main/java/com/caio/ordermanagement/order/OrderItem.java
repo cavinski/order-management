@@ -2,14 +2,31 @@ package com.caio.ordermanagement.order;
 
 import com.caio.ordermanagement.order.exceptions.InvalidOrderItemException;
 import com.caio.ordermanagement.product.Product;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
+@Entity 
+@Table(name = "order_items")
 public class OrderItem {
     
-    private final Product product;
+    @Id 
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "product_id", nullable = false) 
+    private Product product;
+
+    @Column(nullable = false)
     private int quantity;
-    private final BigDecimal unitPrice;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(nullable = false)
     private boolean active;
+
+    protected OrderItem() {}
 
     public OrderItem(Product product, int quantity) {
         if (product == null) {
@@ -24,6 +41,10 @@ public class OrderItem {
         this.quantity = quantity;
         this.unitPrice = product.getPrice();
         this.active = true;
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public Product getProduct() {

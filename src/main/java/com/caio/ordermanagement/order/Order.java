@@ -1,19 +1,37 @@
 package com.caio.ordermanagement.order;
 
 import com.caio.ordermanagement.user.User;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import com.caio.ordermanagement.order.exceptions.InvalidOrderException;
+import jakarta.persistence.*;
 
+@Entity 
+@Table(name = "orders")
 public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
-    private final User user;
-    private final List<OrderItem> items;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private List<OrderItem> items;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderStatus status;
-    private final Instant createdAt;
+
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;  
+
+    protected Order() {}
 
     public Order(User user, List<OrderItem> items) {
 
@@ -35,6 +53,10 @@ public class Order {
         this.items = new ArrayList<>(items);
         this.status = OrderStatus.CREATED;
         this.createdAt = Instant.now();
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public User getUser() {
