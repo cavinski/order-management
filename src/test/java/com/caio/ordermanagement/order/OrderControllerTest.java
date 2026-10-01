@@ -464,4 +464,46 @@ public class OrderControllerTest {
 
         verify(orderService).shipOrder(1L);
     }
+
+    @Test
+    void shouldDeliverOrder() throws Exception {
+
+        doNothing().when(orderService).deliverOrder(1L);
+
+        mockMvc.perform(post("/orders/1/deliver")).andExpect(status().isNoContent());
+
+        verify(orderService).deliverOrder(1L);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeliveringNonExistingOrder() throws Exception {
+
+        doThrow(new OrderNotFoundException(999L))
+            .when(orderService)
+            .deliverOrder(999L);
+
+        mockMvc.perform(post("/orders/999/deliver"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("Order not found"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order not found with id: 999"));
+
+        verify(orderService).deliverOrder(999L);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenDeliveringOrderInInvalidStatus() throws Exception {
+
+        doThrow(new InvalidOrderException("Order can only be delivered from SHIPPED status"))
+            .when(orderService)
+            .deliverOrder(1L);
+
+        mockMvc.perform(post("/orders/1/deliver"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").value("Invalid order"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order can only be delivered from SHIPPED status"));
+
+        verify(orderService).deliverOrder(1L);
+    }
 }

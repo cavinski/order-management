@@ -521,4 +521,79 @@ public class OrderServiceTest {
             .isInstanceOf(InvalidOrderException.class)
             .hasMessage("Order can only be shipped from PROCESSING status");
     }
+
+    @Test
+    void shouldDeliverOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+        order.startProcessing();
+        order.ship();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        orderService.deliverOrder(1L);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
+
+        verify(orderRepository).findById(1L);
+    }
+
+    @Test
+    void shouldThrowWhenDeliveringOrderThatDoesNotExist() {
+
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.deliverOrder(999L))
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessage("Order not found with id: 999");
+
+        verify(orderRepository).findById(999L);
+    }
+
+    @Test
+    void shouldNotDeliverOrderWhenItIsNotShipped() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+        order.startProcessing();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.deliverOrder(1L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order can only be delivered from SHIPPED status");
+    }
 }

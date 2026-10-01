@@ -90,6 +90,14 @@ public class OrderService {
         order.ship();
     }
 
+    @Transactional
+    public void deliverOrder(Long id) {
+
+        Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+
+        order.deliver();
+    }
+
     private CreateOrderResponse toResponse(Order order) {
 
         List<CreateOrderResponse.ItemResponse> items =
