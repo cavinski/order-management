@@ -1,0 +1,238 @@
+package com.caio.ordermanagement.order;
+
+import com.caio.ordermanagement.order.dto.CreateOrderRequest;
+import com.caio.ordermanagement.order.dto.CreateOrderResponse;
+import com.caio.ordermanagement.order.exceptions.InvalidOrderException;
+import com.caio.ordermanagement.order.exceptions.OrderProductNotFoundException;
+import com.caio.ordermanagement.order.exceptions.OrderUserNotFoundException;
+import com.caio.ordermanagement.product.Product;
+import com.caio.ordermanagement.product.ProductRepository;
+import com.caio.ordermanagement.user.User;
+import com.caio.ordermanagement.user.UserRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import org.mockito.ArgumentCaptor;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class OrderServiceTest {
+    
+    @Mock
+    private OrderRepository orderRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private ProductRepository productRepository;
+
+    @InjectMocks
+    private OrderService orderService;
+
+    @Test
+    void shouldCreateOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product notebook = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Product mouse = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("150.00")
+        );
+
+        CreateOrderRequest request = new CreateOrderRequest(
+            1L,
+            List.of(
+                new CreateOrderRequest.ItemRequest(10L, 2),
+                new CreateOrderRequest.ItemRequest(20L, 1)
+            )
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(notebook));
+
+        when(productRepository.findById(20L)).thenReturn(Optional.of(mouse));
+
+        Order savedOrder = new Order(
+            user,
+            List.of(
+                new OrderItem(notebook, 2),
+                new OrderItem(mouse, 1)
+            )
+        );
+
+        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
+
+        CreateOrderResponse response = orderService.createOrder(request);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+
+        verify(orderRepository).save(orderCaptor.capture());
+
+        Order capturedOrder = orderCaptor.getValue();
+
+        assertThat(capturedOrder.getUser()).isSameAs(user);
+
+        assertThat(capturedOrder.getStatus()).isEqualTo(OrderStatus.CREATED);
+
+        assertThat(capturedOrder.getItems()).hasSize(2);
+
+        OrderItem capturedNotebookItem = capturedOrder.getItems().get(0);
+        OrderItem capturedMouseItem = capturedOrder.getItems().get(1);
+
+        assertThat(capturedNotebookItem.getProduct()).isSameAs(notebook);
+
+        assertThat(capturedNotebookItem.getQuantity()).isEqualTo(2);
+
+        assertThat(capturedNotebookItem.getUnitPrice()).isEqualByComparingTo("3500.00");
+
+        assertThat(capturedMouseItem.getProduct()).isSameAs(mouse);
+
+        assertThat(capturedMouseItem.getQuantity()).isEqualTo(1);
+
+        assertThat(capturedMouseItem.getUnitPrice()).isEqualByComparingTo("150.00");
+
+        assertThat(capturedOrder.getTotal()).isEqualByComparingTo("7150.00");
+
+        assertThat(response.status()).isEqualTo(OrderStatus.CREATED);
+
+        assertThat(response.total()).isEqualByComparingTo("7150.00");
+    }
+
+    @Test
+    void shouldThrowWhenUserDoesNotExist() {
+
+        CreateOrderRequest request = new CreateOrderRequest(
+            1L,
+            List.of(
+                new CreateOrderRequest.ItemRequest(10L, 2)
+            )
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.createOrder(request))
+            .isInstanceOf(OrderUserNotFoundException.class)
+            .hasMessage("User not found with id: 1");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenProductDoesNotExist() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        CreateOrderRequest request = new CreateOrderRequest(
+            1L,
+            List.of(
+                new CreateOrderRequest.ItemRequest(10L, 2)
+            )
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.createOrder(request))
+            .isInstanceOf(OrderProductNotFoundException.class)
+            .hasMessage("Product not found with id: 10");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldNotCreateOrderForInactiveUser() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        user.deactivate();
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        CreateOrderRequest request = new CreateOrderRequest(
+            1L,
+            List.of(
+                new CreateOrderRequest.ItemRequest(10L, 1)
+            )
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+
+        assertThatThrownBy(() -> orderService.createOrder(request))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Only active users can create orders");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldNotCreateOrderWithInactiveProduct() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        product.deactivate();
+
+        CreateOrderRequest request = new CreateOrderRequest(
+            1L,
+            List.of(
+                new CreateOrderRequest.ItemRequest(10L, 1)
+            )
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+
+        assertThatThrownBy(() -> orderService.createOrder(request))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Inactive products cannot be added to orders");
+
+        verify(orderRepository, never()).save(any());
+    }
+}
