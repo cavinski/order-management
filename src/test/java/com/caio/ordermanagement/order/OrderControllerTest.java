@@ -21,6 +21,9 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -339,5 +342,44 @@ public class OrderControllerTest {
             .andExpect(jsonPath("$.title").value("Order not found"))
             .andExpect(jsonPath("$.detail")
             .value("Order not found with id: 999"));
+    }
+
+    @Test
+    void shouldConfirmOrder() throws Exception {
+
+        doNothing().when(orderService).confirmOrder(1L);
+
+        mockMvc.perform(post("/orders/1/confirm")).andExpect(status().isNoContent());
+
+        verify(orderService).confirmOrder(1L);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenConfirmingNonExistingOrder() throws Exception {
+
+        doThrow(new OrderNotFoundException(999L)).when(orderService).confirmOrder(999L);
+
+        mockMvc.perform(post("/orders/999/confirm"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("Order not found"))
+            .andExpect(jsonPath("$.detail").value("Order not found with id: 999"));
+
+        verify(orderService).confirmOrder(999L);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenConfirmingOrderInInvalidStatus() throws Exception {
+
+        doThrow(new InvalidOrderException("Order can only be confirmed from CREATED status"))
+            .when(orderService)
+            .confirmOrder(1L);
+
+        mockMvc.perform(post("/orders/1/confirm"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").value("Invalid order"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order can only be confirmed from CREATED status"));
+
+        verify(orderService).confirmOrder(1L);
     }
 }

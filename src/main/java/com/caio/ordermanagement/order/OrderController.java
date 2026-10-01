@@ -27,7 +27,14 @@ public class OrderController {
 
     @GetMapping("/{id}")
     public GetOrderResponse getOrder(@PathVariable Long id) {
-        
+
         return orderService.getOrder(id);
+    }
+
+    @PostMapping("/{id}/confirm")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void confirmOrder(@PathVariable Long id) {
+        
+        orderService.confirmOrder(id);
     }
 } 

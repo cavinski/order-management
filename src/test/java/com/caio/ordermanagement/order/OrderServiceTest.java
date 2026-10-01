@@ -308,4 +308,74 @@ public class OrderServiceTest {
 
         verify(orderRepository).findById(999L);
     }
+
+    @Test
+    void shouldConfirmOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        orderService.confirmOrder(1L);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+
+        verify(orderRepository).findById(1L);
+    }
+
+    @Test
+    void shouldThrowWhenConfirmingOrderThatDoesNotExist() {
+
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.confirmOrder(999L))
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessage("Order not found with id: 999");
+
+        verify(orderRepository).findById(999L);
+    }
+
+    @Test
+    void shouldNotConfirmOrderWhenItIsNotCreated() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.confirmOrder(1L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order can only be confirmed from CREATED status");
+    }
 }
