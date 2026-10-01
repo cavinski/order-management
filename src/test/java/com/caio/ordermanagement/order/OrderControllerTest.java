@@ -422,4 +422,46 @@ public class OrderControllerTest {
 
         verify(orderService).startProcessing(1L);
     }
+
+    @Test
+    void shouldShipOrder() throws Exception {
+
+        doNothing().when(orderService).shipOrder(1L);
+
+        mockMvc.perform(post("/orders/1/ship")).andExpect(status().isNoContent());
+
+        verify(orderService).shipOrder(1L);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenShippingNonExistingOrder() throws Exception {
+
+        doThrow(new OrderNotFoundException(999L))
+            .when(orderService)
+            .shipOrder(999L);
+
+        mockMvc.perform(post("/orders/999/ship"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("Order not found"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order not found with id: 999"));
+
+        verify(orderService).shipOrder(999L);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenShippingOrderInInvalidStatus() throws Exception {
+
+        doThrow(new InvalidOrderException("Order can only be shipped from PROCESSING status"))
+            .when(orderService)
+            .shipOrder(1L);
+
+        mockMvc.perform(post("/orders/1/ship"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").value("Invalid order"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order can only be shipped from PROCESSING status"));
+
+        verify(orderService).shipOrder(1L);
+    }
 }

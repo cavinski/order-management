@@ -41,7 +41,14 @@ public class OrderController {
     @PostMapping("/{id}/processing")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void startProcessing(@PathVariable Long id) {
-        
+
         orderService.startProcessing(id);
+    }
+
+    @PostMapping("/{id}/ship")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void shipOrder(@PathVariable Long id) {
+        
+        orderService.shipOrder(id);
     }
 } 

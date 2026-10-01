@@ -448,4 +448,77 @@ public class OrderServiceTest {
             .isInstanceOf(InvalidOrderException.class)
             .hasMessage("Order can only start processing from CONFIRMED status");
     }
+
+    @Test
+    void shouldShipOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+        order.startProcessing();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        orderService.shipOrder(1L);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.SHIPPED);
+
+        verify(orderRepository).findById(1L);
+    }
+
+    @Test
+    void shouldThrowWhenShippingOrderThatDoesNotExist() {
+
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.shipOrder(999L))
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessage("Order not found with id: 999");
+
+        verify(orderRepository).findById(999L);
+    }
+
+    @Test
+    void shouldNotShipOrderWhenItIsNotProcessing() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.shipOrder(1L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order can only be shipped from PROCESSING status");
+    }
 }
