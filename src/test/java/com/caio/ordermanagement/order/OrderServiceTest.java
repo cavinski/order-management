@@ -596,4 +596,196 @@ public class OrderServiceTest {
             .isInstanceOf(InvalidOrderException.class)
             .hasMessage("Order can only be delivered from SHIPPED status");
     }
+
+    @Test
+    void shouldCancelCreatedOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        orderService.cancelOrder(1L);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+
+        verify(orderRepository).findById(1L);
+    }
+
+    @Test
+    void shouldCancelConfirmedOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        orderService.cancelOrder(1L);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void shouldCancelProcessingOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+        order.startProcessing();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        orderService.cancelOrder(1L);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void shouldThrowWhenCancellingOrderThatDoesNotExist() {
+
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.cancelOrder(999L))
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessage("Order not found with id: 999");
+
+        verify(orderRepository).findById(999L);
+    }
+
+    @Test
+    void shouldNotCancelShippedOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+        order.startProcessing();
+        order.ship();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(1L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order can only be cancelled from CREATED, CONFIRMED or PROCESSING status");
+    }
+
+    @Test
+    void shouldNotCancelDeliveredOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.confirm();
+        order.startProcessing();
+        order.ship();
+        order.deliver();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(1L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order can only be cancelled from CREATED, CONFIRMED or PROCESSING status");
+    }
+
+    @Test
+    void shouldNotCancelAlreadyCancelledOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Order order = new Order(
+            user,
+            List.of(new OrderItem(product, 1))
+        );
+
+        order.cancel();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(1L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order can only be cancelled from CREATED, CONFIRMED or PROCESSING status");
+    }
 }

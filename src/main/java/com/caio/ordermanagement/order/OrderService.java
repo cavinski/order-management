@@ -98,6 +98,14 @@ public class OrderService {
         order.deliver();
     }
 
+    @Transactional
+    public void cancelOrder(Long id) {
+        
+        Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+
+        order.cancel();
+    }
+
     private CreateOrderResponse toResponse(Order order) {
 
         List<CreateOrderResponse.ItemResponse> items =

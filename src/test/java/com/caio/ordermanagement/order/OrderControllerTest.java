@@ -506,4 +506,36 @@ public class OrderControllerTest {
 
         verify(orderService).deliverOrder(1L);
     }
+
+    @Test
+    void shouldReturnNotFoundWhenCancellingNonExistingOrder() throws Exception {
+
+        doThrow(new OrderNotFoundException(999L))
+            .when(orderService)
+            .cancelOrder(999L);
+
+        mockMvc.perform(post("/orders/999/cancel"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("Order not found"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order not found with id: 999"));
+
+        verify(orderService).cancelOrder(999L);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenCancellingOrderInInvalidStatus() throws Exception {
+
+        doThrow(new InvalidOrderException("Order can only be cancelled from CREATED, CONFIRMED or PROCESSING status"))
+            .when(orderService)
+            .cancelOrder(1L);
+
+        mockMvc.perform(post("/orders/1/cancel"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").value("Invalid order"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order can only be cancelled from CREATED, CONFIRMED or PROCESSING status"));
+
+        verify(orderService).cancelOrder(1L);
+    }
 }
