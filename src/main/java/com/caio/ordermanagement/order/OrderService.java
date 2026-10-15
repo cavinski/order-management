@@ -1,5 +1,6 @@
 package com.caio.ordermanagement.order;
 
+import com.caio.ordermanagement.order.dto.AddOrderItemRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
 import com.caio.ordermanagement.order.dto.GetOrderResponse;
@@ -64,6 +65,20 @@ public class OrderService {
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
 
         return toGetResponse(order);
+    }
+
+    @Transactional 
+    public void addItem(Long orderId, AddOrderItemRequest request) {
+
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        Product product = productRepository.findById(request.productId())
+            .orElseThrow(() -> new OrderProductNotFoundException(request.productId()));
+
+        OrderItem item = new OrderItem(product, request.quantity());
+
+        order.addItem(item);
     }
 
     @Transactional

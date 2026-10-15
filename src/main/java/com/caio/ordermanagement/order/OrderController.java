@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import com.caio.ordermanagement.order.dto.AddOrderItemRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
 import com.caio.ordermanagement.order.dto.GetOrderResponse;
@@ -29,6 +30,13 @@ public class OrderController {
     public GetOrderResponse getOrder(@PathVariable Long id) {
 
         return orderService.getOrder(id);
+    }
+
+    @PostMapping("/{id}/items")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void addItem(@PathVariable Long id, @Valid @RequestBody AddOrderItemRequest request) {
+
+        orderService.addItem(id, request);
     }
 
     @PostMapping("/{id}/confirm")

@@ -8,6 +8,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.caio.ordermanagement.order.dto.AddOrderItemRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
 import com.caio.ordermanagement.order.dto.GetOrderResponse;
@@ -24,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -537,5 +539,94 @@ public class OrderControllerTest {
             .value("Order can only be cancelled from CREATED, CONFIRMED or PROCESSING status"));
 
         verify(orderService).cancelOrder(1L);
+    }
+
+    @Test
+    void shouldAddItemToOrder() throws Exception {
+
+        AddOrderItemRequest request = new AddOrderItemRequest(10L, 2);
+
+        doNothing().when(orderService).addItem(1L, request);
+
+        mockMvc.perform(post("/orders/1/items")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNoContent());
+
+        verify(orderService).addItem(1L, request);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenAddingItemToNonExistingOrder() throws Exception {
+
+        AddOrderItemRequest request = new AddOrderItemRequest(10L, 2);
+
+        doThrow(new OrderNotFoundException(999L)).when(orderService).addItem(999L, request);
+
+        mockMvc.perform(post("/orders/999/items")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("Order not found"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order not found with id: 999"));
+
+        verify(orderService).addItem(999L, request);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenAddingNonExistingProduct() throws Exception {
+
+        AddOrderItemRequest request = new AddOrderItemRequest(999L, 2);
+
+        doThrow(new OrderProductNotFoundException(999L)).when(orderService).addItem(1L, request);
+
+        mockMvc.perform(post("/orders/1/items")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("Product not found"))
+            .andExpect(jsonPath("$.detail")
+            .value("Product not found with id: 999"));
+
+        verify(orderService).addItem(1L, request);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenAddingItemViolatesBusinessRules() throws Exception {
+
+        AddOrderItemRequest request = new AddOrderItemRequest(10L, 2);
+
+        doThrow(new InvalidOrderException( "Order items can only be changed while order is CREATED"))
+            .when(orderService)
+            .addItem(1L, request);
+
+        mockMvc.perform(post("/orders/1/items")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").value("Invalid order"))
+            .andExpect(jsonPath("$.detail")
+            .value("Order items can only be changed while order is CREATED"));
+
+        verify(orderService).addItem(1L, request);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenAddingItemWithInvalidQuantity() throws Exception {
+
+        String request = """
+            {
+                "productId": 10,
+                "quantity": 0
+            }
+            """;
+
+        mockMvc.perform(post("/orders/1/items")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(request))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(orderService);
     }
 }

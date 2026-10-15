@@ -1,5 +1,6 @@
 package com.caio.ordermanagement.order;
 
+import com.caio.ordermanagement.order.dto.AddOrderItemRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
 import com.caio.ordermanagement.order.dto.GetOrderResponse;
@@ -787,5 +788,211 @@ public class OrderServiceTest {
         assertThatThrownBy(() -> orderService.cancelOrder(1L))
             .isInstanceOf(InvalidOrderException.class)
             .hasMessage("Order can only be cancelled from CREATED, CONFIRMED or PROCESSING status");
+    }
+
+    @Test
+    void shouldAddItemToOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product existingProduct = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Product newProduct = new Product(
+            "Keyboard",
+            "Teclado mecânico",
+            new BigDecimal("250.00")
+        );
+
+        Order order = new Order(user, List.of(new OrderItem(existingProduct, 1)));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(2L)).thenReturn(Optional.of(newProduct));
+
+        orderService.addItem(1L, new AddOrderItemRequest(2L, 2));
+
+        assertThat(order.getItems()).hasSize(2);
+        assertThat(order.getTotal()).isEqualByComparingTo("600.00");
+
+        OrderItem addedItem = order.getItems().get(1);
+
+        assertThat(addedItem.getProduct()).isSameAs(newProduct);
+        assertThat(addedItem.getQuantity()).isEqualTo(2);
+        assertThat(addedItem.getUnitPrice()).isEqualByComparingTo("250.00");
+
+        verify(orderRepository).findById(1L);
+        verify(productRepository).findById(2L);
+    }
+
+    @Test
+    void shouldThrowWhenAddingItemToNonExistingOrder() {
+        
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+            orderService.addItem(
+                999L,
+                new AddOrderItemRequest(2L, 1)
+            )
+        )
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessage("Order not found with id: 999");
+
+        verify(orderRepository).findById(999L);
+        verifyNoInteractions(productRepository);
+    }
+
+    @Test
+    void shouldThrowWhenAddingNonExistingProductToOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product existingProduct = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Order order = new Order(user, List.of(new OrderItem(existingProduct, 1)));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+            orderService.addItem(
+                1L,
+                new AddOrderItemRequest(999L, 1)
+            )
+        )
+            .isInstanceOf(OrderProductNotFoundException.class)
+            .hasMessage("Product not found with id: 999");
+    }
+
+    @Test
+    void shouldNotAddInactiveProductToOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product existingProduct = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Product inactiveProduct = new Product(
+            "Keyboard",
+            "Teclado mecânico",
+            new BigDecimal("250.00")
+        );
+
+        inactiveProduct.deactivate();
+
+        Order order = new Order(user, List.of(new OrderItem(existingProduct, 1)));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(2L)).thenReturn(Optional.of(inactiveProduct));
+
+        assertThatThrownBy(() ->
+            orderService.addItem(
+                1L,
+                new AddOrderItemRequest(2L, 1)
+            )
+        )
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Inactive products cannot be added to orders");
+
+        assertThat(order.getItems()).hasSize(1);
+    }
+
+    @Test
+    void shouldNotAddItemToConfirmedOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product existingProduct = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Product newProduct = new Product(
+            "Keyboard",
+            "Teclado mecânico",
+            new BigDecimal("250.00")
+        );
+
+        Order order = new Order(user, List.of(new OrderItem(existingProduct, 1)));
+
+        order.confirm();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(2L)).thenReturn(Optional.of(newProduct));
+
+        assertThatThrownBy(() ->
+            orderService.addItem(
+                1L,
+                new AddOrderItemRequest(2L, 1)
+            )
+        )
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order items can only be changed while order is CREATED");
+
+        assertThat(order.getItems()).hasSize(1);
+    }
+
+    @Test
+    void shouldNotAddProductAlreadyPresentInOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Order order = new Order(user, List.of(new OrderItem(product, 1)));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(2L)).thenReturn(Optional.of(product));
+
+        assertThatThrownBy(() ->
+            orderService.addItem(
+                1L,
+                new AddOrderItemRequest(2L, 1)
+            )
+        )
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order cannot contain the same product more than once");
+
+        assertThat(order.getItems()).hasSize(1);
     }
 }
