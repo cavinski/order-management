@@ -1153,4 +1153,226 @@ public class OrderServiceTest {
             .isInstanceOf(InvalidOrderException.class)
             .hasMessage("Inactive order items cannot be updated");
     }
+
+    @Test
+    void shouldRemoveItem() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Product anotherProduct = new Product(
+            "Keyboard",
+            "Teclado mecânico",
+            new BigDecimal("200.00")
+        );
+
+        OrderItem itemToRemove = new OrderItem(product, 1);
+        OrderItem remainingItem = new OrderItem(anotherProduct, 1);
+
+        Order order = new Order(user, List.of(itemToRemove, remainingItem));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+
+        orderService.removeItem(1L, 10L);
+
+        assertThat(itemToRemove.isActive()).isFalse();
+        assertThat(remainingItem.isActive()).isTrue();
+        assertThat(order.getItems()).contains(itemToRemove);
+    }
+
+    @Test
+    void shouldThrowWhenRemovingItemFromNonexistentOrder() {
+
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.removeItem(999L, 10L))
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessage("Order not found with id: 999");
+    }
+
+    @Test
+    void shouldThrowWhenRemovingNonexistentProduct() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Order order = new Order(user, List.of(
+            new OrderItem(
+                new Product(
+                    "Mouse",
+                    "Mouse sem fio",
+                    new BigDecimal("100.00")
+                ),
+                1
+            )
+        ));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.removeItem(1L, 999L))
+            .isInstanceOf(OrderProductNotFoundException.class)
+            .hasMessage("Product not found with id: 999");
+    }
+
+    @Test
+    void shouldThrowWhenRemovingProductNotPresentInOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product orderProduct = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Product otherProduct = new Product(
+            "Keyboard",
+            "Teclado mecânico",
+            new BigDecimal("200.00")
+        );
+
+        Order order = new Order(user, List.of(
+            new OrderItem(orderProduct, 1),
+            new OrderItem(
+                new Product(
+                    "Headset",
+                    "Headset USB",
+                    new BigDecimal("150.00")
+                ),
+                1
+            )
+        ));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(otherProduct));
+
+        assertThatThrownBy(() -> orderService.removeItem(1L, 10L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order item does not belong to this order");
+    }
+
+    @Test
+    void shouldNotRemoveItemWhenOrderIsConfirmed() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Product anotherProduct = new Product(
+            "Keyboard",
+            "Teclado mecânico",
+            new BigDecimal("200.00")
+        );
+
+        Order order = new Order(user, List.of(
+            new OrderItem(product, 1),
+            new OrderItem(anotherProduct, 1)
+        ));
+
+        order.confirm();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+
+        assertThatThrownBy(() -> orderService.removeItem(1L, 10L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order items can only be changed while order is CREATED");
+    }
+
+    @Test
+    void shouldNotRemoveLastActiveOrderItem() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        OrderItem item = new OrderItem(product, 1);
+
+        Order order = new Order(user, List.of(item));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+
+        assertThatThrownBy(() -> orderService.removeItem(1L, 10L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order must have at least one item");
+
+        assertThat(item.isActive()).isTrue();
+    }
+
+    @Test
+    void shouldNotRemoveInactiveOrderItem() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Product anotherProduct = new Product(
+            "Keyboard",
+            "Teclado mecânico",
+            new BigDecimal("200.00")
+        );
+
+        OrderItem item = new OrderItem(product, 1);
+        OrderItem remainingItem = new OrderItem(anotherProduct, 1);
+
+        Order order = new Order(user, List.of(item, remainingItem));
+
+        item.remove();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+
+        assertThatThrownBy(() -> orderService.removeItem(1L, 10L))
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Inactive order items cannot be removed");
+    }
 }

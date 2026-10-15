@@ -29,6 +29,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -760,5 +761,38 @@ public class OrderControllerTest {
             eq(10L),
             any(UpdateOrderItemQuantityRequest.class)
         );
+    }
+
+    @Test
+    void shouldRemoveOrderItem() throws Exception {
+
+        mockMvc.perform(delete("/orders/1/items/10")).andExpect(status().isNoContent());
+
+        verify(orderService).removeItem(1L, 10L);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenRemovingItemFromNonexistentOrder() throws Exception {
+
+        doThrow(new OrderNotFoundException(999L)).when(orderService).removeItem(999L, 10L);
+
+        mockMvc.perform(delete("/orders/999/items/10")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenRemovingNonexistentProduct() throws Exception {
+
+        doThrow(new OrderProductNotFoundException(999L)).when(orderService).removeItem(1L, 999L);
+
+        mockMvc.perform(delete("/orders/1/items/999")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenRemovingItemFromConfirmedOrder() throws Exception {
+
+        doThrow(new InvalidOrderException("Order items can only be changed while order is CREATED"))
+            .when(orderService).removeItem(1L, 10L);
+
+        mockMvc.perform(delete("/orders/1/items/10")).andExpect(status().isBadRequest());
     }
 }

@@ -98,6 +98,20 @@ public class OrderService {
     }
 
     @Transactional
+    public void removeItem(Long orderId, Long productId) {
+
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        Product product = productRepository.findById(productId).orElseThrow(() -> new OrderProductNotFoundException(productId));
+
+        OrderItem item = order.getItems().stream().filter(orderItem -> orderItem.getProduct() == product)
+            .findFirst()
+            .orElseThrow(() -> new InvalidOrderException("Order item does not belong to this order"));
+
+        order.removeItem(item);
+    }
+
+    @Transactional
     public void confirmOrder(Long id) {
 
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));

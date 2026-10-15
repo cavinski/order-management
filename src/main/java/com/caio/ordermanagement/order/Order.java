@@ -118,6 +118,10 @@ public class Order {
             throw new InvalidOrderException("Order item does not belong to this order");
         }
 
+        if (!item.isActive()) {
+            throw new InvalidOrderException("Inactive order items cannot be removed");
+        }
+
         long activeItems = items.stream().filter(OrderItem::isActive).count();
 
         if (activeItems == 1 && item.isActive()) {

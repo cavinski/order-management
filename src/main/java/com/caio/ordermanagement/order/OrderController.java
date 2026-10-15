@@ -46,8 +46,15 @@ public class OrderController {
         @PathVariable Long orderId,
         @PathVariable Long productId, 
         @Valid @RequestBody UpdateOrderItemQuantityRequest request) {
-            
+
         orderService.updateItemQuantity(orderId, productId, request);
+    }
+
+    @DeleteMapping("/{orderId}/items/{productId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeItem(@PathVariable Long orderId, @PathVariable Long productId) {
+        
+        orderService.removeItem(orderId, productId);
     }
 
     @PostMapping("/{id}/confirm")
