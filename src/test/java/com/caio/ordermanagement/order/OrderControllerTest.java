@@ -12,6 +12,7 @@ import com.caio.ordermanagement.order.dto.AddOrderItemRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
 import com.caio.ordermanagement.order.dto.GetOrderResponse;
+import com.caio.ordermanagement.order.dto.UpdateOrderItemQuantityRequest;
 import com.caio.ordermanagement.order.exceptions.InvalidOrderException;
 import com.caio.ordermanagement.order.exceptions.OrderNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderProductNotFoundException;
@@ -22,12 +23,14 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -628,5 +631,134 @@ public class OrderControllerTest {
             .andExpect(status().isBadRequest());
 
         verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void shouldUpdateOrderItemQuantity() throws Exception {
+
+        UpdateOrderItemQuantityRequest request = new UpdateOrderItemQuantityRequest(5);
+
+        mockMvc.perform(patch("/orders/1/items/10")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNoContent());
+
+        verify(orderService).updateItemQuantity(eq(1L), eq(10L), eq(request));
+    }
+
+    @Test
+    void shouldRejectZeroQuantityWhenUpdatingOrderItem() throws Exception {
+
+        String request = """
+            {
+                "quantity": 0
+            }
+            """;
+
+        mockMvc.perform(patch("/orders/1/items/10")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(request))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void shouldRejectNegativeQuantityWhenUpdatingOrderItem() throws Exception {
+
+        String request = """
+            {
+                "quantity": -3
+            }
+            """;
+
+        mockMvc.perform(patch("/orders/1/items/10")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(request))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdatingItemOfNonexistentOrder() throws Exception {
+
+        doThrow(new OrderNotFoundException(999L)).when(orderService).updateItemQuantity(
+            eq(999L),
+            eq(10L),
+            any(UpdateOrderItemQuantityRequest.class)
+        );
+
+        String request = """
+            {
+                "quantity": 5
+            }
+            """;
+
+        mockMvc.perform(patch("/orders/999/items/10")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(request))
+            .andExpect(status().isNotFound());
+
+        verify(orderService).updateItemQuantity(
+            eq(999L),
+            eq(10L),
+            any(UpdateOrderItemQuantityRequest.class)
+        );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdatingNonexistentProduct() throws Exception {
+
+        doThrow(new OrderProductNotFoundException(999L)).when(orderService).updateItemQuantity(
+            eq(1L),
+            eq(999L),
+            any(UpdateOrderItemQuantityRequest.class)
+        );  
+
+        String request = """
+            {
+                "quantity": 5
+            }
+            """;
+
+        mockMvc.perform(patch("/orders/1/items/999")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(request))
+            .andExpect(status().isNotFound());
+
+        verify(orderService).updateItemQuantity(
+            eq(1L),
+            eq(999L),
+            any(UpdateOrderItemQuantityRequest.class)
+        );
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdatingItemOfConfirmedOrder() throws Exception {
+
+        doThrow(new InvalidOrderException("Order items can only be changed while order is CREATED"))
+        .when(orderService).updateItemQuantity(
+            eq(1L),
+            eq(10L),
+            any(UpdateOrderItemQuantityRequest.class)
+        );
+
+        String request = """
+            {
+                "quantity": 5
+            }
+            """;
+
+        mockMvc.perform(patch("/orders/1/items/10")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(request))
+            .andExpect(status().isBadRequest());
+
+        verify(orderService).updateItemQuantity(
+            eq(1L),
+            eq(10L),
+            any(UpdateOrderItemQuantityRequest.class)
+        );
     }
 }

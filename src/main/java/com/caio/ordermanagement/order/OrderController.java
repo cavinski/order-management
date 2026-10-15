@@ -8,6 +8,7 @@ import com.caio.ordermanagement.order.dto.AddOrderItemRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
 import com.caio.ordermanagement.order.dto.GetOrderResponse;
+import com.caio.ordermanagement.order.dto.UpdateOrderItemQuantityRequest;
 
 @RestController 
 @RequestMapping("/orders")
@@ -37,6 +38,16 @@ public class OrderController {
     public void addItem(@PathVariable Long id, @Valid @RequestBody AddOrderItemRequest request) {
 
         orderService.addItem(id, request);
+    }
+
+    @PatchMapping("/{orderId}/items/{productId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateItemQuantity(
+        @PathVariable Long orderId,
+        @PathVariable Long productId, 
+        @Valid @RequestBody UpdateOrderItemQuantityRequest request) {
+            
+        orderService.updateItemQuantity(orderId, productId, request);
     }
 
     @PostMapping("/{id}/confirm")

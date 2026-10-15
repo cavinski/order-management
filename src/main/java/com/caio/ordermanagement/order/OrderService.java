@@ -4,6 +4,8 @@ import com.caio.ordermanagement.order.dto.AddOrderItemRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
 import com.caio.ordermanagement.order.dto.GetOrderResponse;
+import com.caio.ordermanagement.order.dto.UpdateOrderItemQuantityRequest;
+import com.caio.ordermanagement.order.exceptions.InvalidOrderException;
 import com.caio.ordermanagement.order.exceptions.OrderNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderProductNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderUserNotFoundException;
@@ -79,6 +81,20 @@ public class OrderService {
         OrderItem item = new OrderItem(product, request.quantity());
 
         order.addItem(item);
+    }
+
+    @Transactional
+    public void updateItemQuantity(Long orderId, Long productId, UpdateOrderItemQuantityRequest request) {
+
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        Product product = productRepository.findById(productId).orElseThrow(() -> new OrderProductNotFoundException(productId));
+
+        OrderItem item = order.getItems().stream().filter(orderItem -> orderItem.getProduct() == product)
+            .findFirst().orElseThrow(() -> 
+            new InvalidOrderException("Order item does not belong to this order"));
+
+        order.updateItemQuantity(item, request.quantity());
     }
 
     @Transactional

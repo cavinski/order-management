@@ -4,6 +4,7 @@ import com.caio.ordermanagement.order.dto.AddOrderItemRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderRequest;
 import com.caio.ordermanagement.order.dto.CreateOrderResponse;
 import com.caio.ordermanagement.order.dto.GetOrderResponse;
+import com.caio.ordermanagement.order.dto.UpdateOrderItemQuantityRequest;
 import com.caio.ordermanagement.order.exceptions.InvalidOrderException;
 import com.caio.ordermanagement.order.exceptions.OrderNotFoundException;
 import com.caio.ordermanagement.order.exceptions.OrderProductNotFoundException;
@@ -994,5 +995,162 @@ public class OrderServiceTest {
             .hasMessage("Order cannot contain the same product more than once");
 
         assertThat(order.getItems()).hasSize(1);
+    }
+
+    @Test
+    void shouldUpdateOrderItemQuantity() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Order order = new Order(user, List.of(new OrderItem(product, 1)));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+
+        UpdateOrderItemQuantityRequest request = new UpdateOrderItemQuantityRequest(3);
+
+        orderService.updateItemQuantity(
+            1L,
+            10L,
+            request
+        );
+
+        assertThat(order.getItems().get(0).getQuantity()).isEqualTo(3);
+        assertThat(order.getTotal()).isEqualByComparingTo("300.00");
+
+        verify(orderRepository).findById(1L);
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingItemOfNonExistingOrder() {
+
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+            orderService.updateItemQuantity(
+                999L,
+                10L,
+                new UpdateOrderItemQuantityRequest(3)
+            )
+        )
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessage("Order not found with id: 999");
+
+        verify(orderRepository).findById(999L);
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingItemNotPresentInOrder() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Order order = new Order(user, List.of(new OrderItem(product, 1)));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() ->
+            orderService.updateItemQuantity(
+                1L,
+                999L,
+                new UpdateOrderItemQuantityRequest(3)
+            )
+        )
+            .isInstanceOf(OrderProductNotFoundException.class)
+            .hasMessage("Product not found with id: 999");
+    }
+
+    @Test
+    void shouldNotUpdateItemQuantityWhenOrderIsConfirmed() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Order order = new Order(user, List.of(new OrderItem(product, 1)));
+
+        order.confirm();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+
+        UpdateOrderItemQuantityRequest request = new UpdateOrderItemQuantityRequest(5);
+
+        assertThatThrownBy(() ->
+            orderService.updateItemQuantity(
+                1L,
+                10L,
+                request
+            )
+        )
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Order items can only be changed while order is CREATED");
+    }
+
+    @Test
+    void shouldNotUpdateInactiveOrderItem() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product product = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        OrderItem item = new OrderItem(product, 1);
+
+        Order order = new Order(user, List.of(item));
+
+        item.remove();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product));
+
+        UpdateOrderItemQuantityRequest request = new UpdateOrderItemQuantityRequest(5);
+
+        assertThatThrownBy(() ->
+            orderService.updateItemQuantity(
+                1L,
+                10L,
+                request
+            )
+        )
+            .isInstanceOf(InvalidOrderException.class)
+            .hasMessage("Inactive order items cannot be updated");
     }
 }
