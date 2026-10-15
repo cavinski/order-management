@@ -300,6 +300,55 @@ public class OrderServiceTest {
     }
 
     @Test
+    void shouldGetOrderIncludingInactiveItems() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product mouse = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("100.00")
+        );
+
+        Product keyboard = new Product(
+            "Keyboard",
+            "Teclado mecânico",
+            new BigDecimal("200.00")
+        );
+
+        OrderItem mouseItem = new OrderItem(mouse, 1);
+        OrderItem keyboardItem = new OrderItem(keyboard, 2);
+
+        Order order = new Order(user, List.of(mouseItem, keyboardItem));
+
+        mouseItem.remove();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        GetOrderResponse response = orderService.getOrder(1L);
+
+        assertThat(response.items()).hasSize(2);
+
+        GetOrderResponse.ItemResponse mouseResponse = response.items().get(0);
+
+        assertThat(mouseResponse.productId()).isEqualTo(mouse.getId());
+        assertThat(mouseResponse.active()).isFalse();
+        assertThat(mouseResponse.subtotal()).isEqualByComparingTo("100.00");
+
+        GetOrderResponse.ItemResponse keyboardResponse = response.items().get(1);
+
+        assertThat(keyboardResponse.productId()).isEqualTo(keyboard.getId());
+        assertThat(keyboardResponse.active()).isTrue();
+        assertThat(keyboardResponse.subtotal()).isEqualByComparingTo("400.00");
+
+        assertThat(response.total()).isEqualByComparingTo("400.00");
+    }
+
+    @Test
     void shouldThrowWhenOrderDoesNotExist() {
 
         when(orderRepository.findById(999L)).thenReturn(Optional.empty());
