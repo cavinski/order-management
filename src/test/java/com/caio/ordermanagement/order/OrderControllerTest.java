@@ -795,4 +795,56 @@ public class OrderControllerTest {
 
         mockMvc.perform(delete("/orders/1/items/10")).andExpect(status().isBadRequest());
     }
+
+    @Test
+    void shouldGetOrdersByUser() throws Exception {
+
+        GetOrderResponse order = new GetOrderResponse(
+            100L,
+            1L,
+            OrderStatus.CREATED,
+            new BigDecimal("150.00"),
+            Instant.parse("2026-08-24T12:00:00Z"),
+            List.of()
+        );
+
+        when(orderService.getOrdersByUser(1L)).thenReturn(List.of(order));
+
+        mockMvc.perform(get("/orders/user/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].id").value(100))
+            .andExpect(jsonPath("$[0].userId").value(1))
+            .andExpect(jsonPath("$[0].status").value("CREATED"))
+            .andExpect(jsonPath("$[0].total").value(150.00));
+
+        verify(orderService).getOrdersByUser(1L);
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenUserHasNoOrders() throws Exception {
+
+        when(orderService.getOrdersByUser(1L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/orders/user/1"))
+            .andExpect(status().isOk())
+            .andExpect(content().json("[]"));
+
+        verify(orderService).getOrdersByUser(1L);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenListingOrdersForNonexistentUser() throws Exception {
+
+        when(orderService.getOrdersByUser(999L)).thenThrow(new OrderUserNotFoundException(999L));
+
+        mockMvc.perform(get("/orders/user/999"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("User not found"))
+            .andExpect(jsonPath("$.detail")
+            .value("User not found with id: 999"));
+
+        verify(orderService).getOrdersByUser(999L);
+    }
 }

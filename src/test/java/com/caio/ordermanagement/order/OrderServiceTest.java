@@ -1424,4 +1424,86 @@ public class OrderServiceTest {
             .isInstanceOf(InvalidOrderException.class)
             .hasMessage("Inactive order items cannot be removed");
     }
+
+    
+    @Test
+    void shouldGetOrdersByUser() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        Product notebook = new Product(
+            "Notebook",
+            "Notebook para trabalho",
+            new BigDecimal("3500.00")
+        );
+
+        Product mouse = new Product(
+            "Mouse",
+            "Mouse sem fio",
+            new BigDecimal("150.00")
+        );
+
+        Order firstOrder = new Order(user, List.of(new OrderItem(notebook, 1)));
+
+        Order secondOrder = new Order(user, List.of(new OrderItem(mouse, 2)));
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(orderRepository.findAllByUserId(1L)).thenReturn(List.of(firstOrder, secondOrder));
+
+        List<GetOrderResponse> responses = orderService.getOrdersByUser(1L);
+
+        assertThat(responses).hasSize(2);
+
+        assertThat(responses.get(0).userId()).isEqualTo(user.getId());
+
+        assertThat(responses.get(0).status()).isEqualTo(OrderStatus.CREATED);
+
+        assertThat(responses.get(0).total()).isEqualByComparingTo("3500.00");
+
+        assertThat(responses.get(1).total()).isEqualByComparingTo("300.00");
+
+        verify(userRepository).findById(1L);
+        verify(orderRepository).findAllByUserId(1L);
+    }
+
+    
+    @Test
+    void shouldReturnEmptyListWhenUserHasNoOrders() {
+
+        User user = new User(
+            "Caio",
+            "caio@example.com",
+            "password"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(orderRepository.findAllByUserId(1L)).thenReturn(List.of());
+
+        List<GetOrderResponse> responses = orderService.getOrdersByUser(1L);
+
+        assertThat(responses).isEmpty();
+
+        verify(userRepository).findById(1L);
+        verify(orderRepository).findAllByUserId(1L);
+    }
+
+    @Test
+    void shouldThrowWhenGettingOrdersForNonexistentUser() {
+
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.getOrdersByUser(999L))
+            .isInstanceOf(OrderUserNotFoundException.class)
+            .hasMessage("User not found with id: 999");
+
+        verify(userRepository).findById(999L);
+        verifyNoInteractions(orderRepository);
+    }
+
 }

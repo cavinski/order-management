@@ -111,6 +111,14 @@ public class OrderService {
         order.removeItem(item);
     }
 
+    @Transactional(readOnly = true)
+    public List<GetOrderResponse> getOrdersByUser(Long userId) {
+
+        userRepository.findById(userId).orElseThrow(() -> new OrderUserNotFoundException(userId));
+
+        return orderRepository.findAllByUserId(userId).stream().map(this::toGetResponse).toList();
+    }
+
     @Transactional
     public void confirmOrder(Long id) {
 

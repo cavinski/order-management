@@ -1,6 +1,9 @@
 package com.caio.ordermanagement.order;
 
 import jakarta.validation.Valid;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +34,12 @@ public class OrderController {
     public GetOrderResponse getOrder(@PathVariable Long id) {
 
         return orderService.getOrder(id);
+    }
+
+    @GetMapping("/user/{userId}")
+    public List<GetOrderResponse> getOrdersByUser(@PathVariable Long userId) {
+        
+        return orderService.getOrdersByUser(userId);
     }
 
     @PostMapping("/{id}/items")
